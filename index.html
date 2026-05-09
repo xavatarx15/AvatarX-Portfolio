@@ -1479,32 +1479,83 @@ function observeReveal() {
   document.querySelectorAll('.reveal, [data-count]').forEach(el => io.observe(el));
 }
 
-/* ─── Form Validation ───────────────────────────────────────── */
-function handleFormSubmit() {
-  const name  = document.getElementById('fname');
-  const email = document.getElementById('femail');
-  const msg   = document.getElementById('fmessage');
-  let valid   = true;
+/* ─── Form Validation + Submit ──────────────────────────────── */
+async function handleFormSubmit() {
+  const nameEl    = document.getElementById('fname');
+  const emailEl   = document.getElementById('femail');
+  const serviceEl = document.getElementById('fservice');
+  const msgEl     = document.getElementById('fmessage');
+  const btn       = document.getElementById('submitBtn');
+  let valid = true;
 
   const showErr = (id, show) => {
     document.querySelectorAll('#'+id+', #'+id+'-en').forEach(el => el.classList.toggle('show', show));
   };
 
-  if (!name.value.trim()) { showErr('fname-err', true); valid = false; }
-  else showErr('fname-err', false);
+  if (!nameEl.value.trim())                        { showErr('fname-err',  true);  valid = false; }
+  else                                               showErr('fname-err',  false);
 
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRe.test(email.value.trim())) { showErr('femail-err', true); valid = false; }
-  else showErr('femail-err', false);
+  if (!emailRe.test(emailEl.value.trim()))         { showErr('femail-err', true);  valid = false; }
+  else                                               showErr('femail-err', false);
 
-  if (!msg.value.trim()) { showErr('fmsg-err', true); valid = false; }
-  else showErr('fmsg-err', false);
+  if (!msgEl.value.trim())                         { showErr('fmsg-err',   true);  valid = false; }
+  else                                               showErr('fmsg-err',   false);
 
-  if (valid) {
-    document.getElementById('formSuccess').classList.add('show');
-    name.value = email.value = msg.value = '';
-    setTimeout(() => document.getElementById('formSuccess').classList.remove('show'), 5000);
-  }
+  if (!valid) return;
+
+  btn.disabled = true;
+  btn.style.opacity = '.6';
+
+  const clientName    = nameEl.value.trim();
+  const clientEmail   = emailEl.value.trim();
+  const clientService = serviceEl.options[serviceEl.selectedIndex].text || '—';
+  const clientMsg     = msgEl.value.trim();
+
+  try {
+    const w3data = new FormData();
+    w3data.append('access_key', '478c580c-5331-48d7-9cb2-6d16467721a8');
+    w3data.append('name',    clientName);
+    w3data.append('email',   clientEmail);
+    w3data.append('service', clientService);
+    w3data.append('message', clientMsg);
+    w3data.append('subject', '[AvatarX] New Project Request from ' + clientName);
+    await fetch('https://api.web3forms.com/submit', { method: 'POST', body: w3data });
+  } catch (_) {}
+
+  try {
+    const hook = 'https://discord.com/api/webhooks/1502642062825095298/qVDQ-TLA3JBrEL3pIU9wIeJJy8h2-6pNQp4UgmiNKpAmCK9O_Yc4zG9hNb6WpFbtpCpP';
+    await fetch(hook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'AvatarX Systems Bot',
+        avatar_url: 'https://xavatarx15.github.io/AvatarX-Portfolio/assets/img/logo.png',
+        content: '🚀 **طلب مشروع جديد!**',
+        embeds: [{
+          title: '📋 تفاصيل الطلب',
+          color: 0xD4A043,
+          fields: [
+            { name: '👤 الاسم',           value: clientName,    inline: true  },
+            { name: '📧 الإيميل',         value: clientEmail,   inline: true  },
+            { name: '⚙️ نوع الخدمة',     value: clientService, inline: false },
+            { name: '💬 تفاصيل المشروع', value: clientMsg,     inline: false }
+          ],
+          footer: { text: 'Sent from AvatarX Portfolio' },
+          timestamp: new Date().toISOString()
+        }]
+      })
+    });
+  } catch (_) {}
+
+  document.getElementById('formSuccess').classList.add('show');
+  nameEl.value = '';
+  emailEl.value = '';
+  msgEl.value = '';
+  serviceEl.selectedIndex = 0;
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  setTimeout(() => document.getElementById('formSuccess').classList.remove('show'), 6000);
 }
 
 /* ─── Init ──────────────────────────────────────────────────── */
